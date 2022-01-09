@@ -1,3 +1,4 @@
+# This Python file uses the following encoding: utf-8
 import sys
 from scrape_reddit import scrape_r_cocktails
 
@@ -25,7 +26,7 @@ test_dict = {
                [0.5, '', '', 'green chartreuse'],
                [0.25, '', 'simple', 'syrup'],
                [0.75, '', 'fresh lime', 'juice']],
-    'kup5c3': [[2.0, 'oz', 'dewar’s 12 blended', 'scotch'],
+    'kup5c3': [[2.0, 'oz', "dewar’s 12 blended", 'scotch'],
                [0.75, 'oz', 'honey&ginger', 'syrup'],
                [0.75, 'oz', 'lemon', 'juice'],
                [0.5, 'oz', 'lagavulin 16 islay single malt', 'whiskey']],

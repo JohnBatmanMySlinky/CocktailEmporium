@@ -9,15 +9,19 @@ def delete_long_descriptors(recipe):
             recipe_new.append(each)
     return recipe_new
 
+def expand_forgotten(recipe, adjectives, noun):
+    """
+    for recipes when they say 'lemon' but mean 'lemon juice'
+    """
+    for adjective in adjectives:
+        regex_str = rf"{adjective},|{adjective}\n|{adjective}$"
+        if re.findall(regex_str, recipe):
+            recipe = recipe.replace(adjective, adjective+' '+noun)
 
-def cocktail_parser(recipe):
-    recipe = recipe.lower()
+    return recipe
 
-    # build lists for regex
-    end_words = open("../lingo/ingredients.txt", "r").read().strip().split('\n')
-    end_words_str = '|'.join(end_words)
-    measure_words = open("../lingo/units.txt", "r").read().strip().split('\n')
-    measure_words_str = '|'.join(measure_words)
+def clean_up_silly_stuff(recipe):
+    recipe = recipe.replace('oz.', 'oz')
 
     ##############
     # REGEXERY
@@ -61,17 +65,41 @@ def cocktail_parser(recipe):
         recipe = re.sub(k, v, recipe)
     recipe = recipe.replace(u'\xa0', ' ')
 
+    return recipe
+
+def cocktail_parser(recipe):
+    recipe = recipe.lower()
+
+    # build lists for regex
+    end_words = open("../lingo/ingredients.txt", "r").read().strip().split('\n')
+    end_words_str = '|'.join(end_words)
+    measure_words = open("../lingo/units.txt", "r").read().strip().split('\n')
+    measure_words_str = '|'.join(measure_words)
+
+    # converting unicode fractions and other misc clean up of the raw recipe
+    recipe = clean_up_silly_stuff(recipe)
+
+    # for cases where we have 'lemon' but not 'lemon juice' or 'simple' but not 'simple syrup' or 'Angostura but not Angostura bitters'
+    # does some checks to not end up with 'lemon juice juice'
+    forgotten_dict = {
+        'syrup': ['simple'],
+        'juice': ['lemon', 'lime'],
+        'bitters': ['angostura']
+    }
+    for noun, adjectives in forgotten_dict.items():
+        recipe = expand_forgotten(recipe, adjectives, noun)
+
     # remove anything within ()
     # such as '2 oz (60ml) of booze'
     recipe = re.sub(r'\([^)]*\) ', '', recipe)
 
     # assume there are measure words
-    regex_str = r'([0-9] [0-9]\/[0-9]|[0-9]\/[0-9]|[0-9]\.[0-9][0-9]|[0-9]\.[0-9]|\.[0-9][0-9]|\.[0-9]|[0-9][0-9]|[0-9])(.+|)(' + measure_words_str + r')(.+?)\b(' + end_words_str + r')\b'
+    regex_str = r'([0-9] [0-9]\/[0-9]|[0-9]\/[0-9]|[0-9]\.[0-9][0-9]|[0-9]\.[0-9]|\.[0-9][0-9]|\.[0-9]|[0-9][0-9]|[0-9])(|.+)(' + measure_words_str + r')(.+?)\b(' + end_words_str + r')\b'
     recipe_parsed = re.findall(regex_str, recipe)
     recipe_parsed = delete_long_descriptors(recipe_parsed)
 
     # assume there ARENT measure words
-    regex_str_no_measure_words = r'([0-9] [0-9]\/[0-9]|[0-9]\/[0-9]|[0-9]\.[0-9][0-9]|[0-9]\.[0-9]|\.[0-9][0-9]|\.[0-9]|[0-9][0-9]|[0-9])(.+|)(' + end_words_str + r')'
+    regex_str_no_measure_words = r'([0-9] [0-9]\/[0-9]|[0-9]\/[0-9]|[0-9]\.[0-9][0-9]|[0-9]\.[0-9]|\.[0-9][0-9]|\.[0-9]|[0-9][0-9]|[0-9])(|.+)(' + end_words_str + r')'
     recipe_parsed_no_measure = re.findall(regex_str_no_measure_words, recipe)
     recipe_parsed_no_measure = delete_long_descriptors(recipe_parsed_no_measure)
 
